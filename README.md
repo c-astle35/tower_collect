@@ -2,4 +2,7 @@
 
 A Collection of Attempts at Understanding Apache Spark through PySpark
 ----
-- First File: a basic wordcount using mapreduce 
+Files Include:
+ - a basic wordcount using mapreduce
+ - an exercise on k-means clustering
+ - a TODO file on working linear algebra operations and PySpark's Machine Learning Packages
