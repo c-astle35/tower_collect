@@ -1,6 +1,7 @@
 import re 
 
 #create a SparkContext object from a donloaded .txt file of Shakespeare's Hamlet
+#located in the Hadoop Distributed File Sytem
 doc = sc.textFile("///hdfs/user/lev/hamlet.txt")
 
 #create an RDD that contains the words in a flat list
