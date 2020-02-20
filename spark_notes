@@ -1,0 +1,354 @@
+Client
+Driver
+
+Master
+Worker Nodes
+Executors
+
+Spark Standalone Set-Up
+1. Install Java
+
+sudo apt-get update
+
+sudo apt-get install openjdk-7-jre
+
+sudo apt-get install openjdk-7-jdk
+
+$ java -version
+
+java version "1.7.0_91"
+
+OpenJDK Runtime Environment (IcedTea 2.6.3) (7u91-2.6.3-0ubuntu0.14.04.1)
+
+OpenJDK 64-Bit Server VM (build 24.91-b01, mixed mode)
+
+
+2. Extract Spark Package and Create SPARK_HOME
+
+tar -xzf spark-1.5.2-bin-hadoop2.6.tgz
+
+sudo mv spark-1.5.2-bin-hadoop2.6 /opt/spark
+
+export SPARK_HOME=/opt/spark
+
+export PATH=$SPARK_HOME/bin:$PATH
+
+3. Run pyspark command
+
+4. Run Pi Estimator Example
+
+spark-submit --class org.apache.spark.examples.SparkPi \
+
+--master local \
+
+$SPARK_HOME/lib/spark-examples*.jar 10
+
+
+Spark Cluster Set-Up
+
+Take your single node Spark system and create a basic two-node Spark cluster with a master node and a worker node.
+
+In this example, I use two Linux instances with Spark installed in the same relative paths: one with a hostname of sparkmaster, and the other with a hostname of sparkslave.
+
+1. Ensure that each node can resolve the other. The ping command can be used for this. For example, from sparkmaster:
+
+ping sparkslave
+
+2. Ensure the firewall rules of network ACLs will allow traffic on multiple ports between cluster instances because cluster nodes will communicate using various TCP ports (normally not a concern if all cluster nodes are on the same subnet).
+
+3. Create and configure the spark-defaults.conf file on all nodes. Run the following commands on the sparkmaster and sparkslave hosts:
+
+Click here to view code image
+
+cd $SPARK_HOME/conf
+
+sudo cp spark-defaults.conf.template spark-defaults.conf
+
+sudo sed -i "\$aspark.master\tspark://sparkmaster:7077" spark-defaults.conf
+
+4. Create and configure the spark-env.sh file on all nodes. Complete the following tasks on the sparkmaster and sparkslave hosts:
+
+Click here to view code image
+
+cd $SPARK_HOME/conf
+
+sudo cp spark-env.sh.template spark-env.sh
+
+sudo sed -i "\$aSPARK_MASTER_IP=sparkmaster" spark-env.sh
+
+5. On the sparkmaster host, run the following command:
+
+Click here to view code image
+
+sudo $SPARK_HOME/sbin/start-master.sh
+
+6. On the sparkslave host, run the following command:
+
+Click here to view code image
+
+sudo $SPARK_HOME/sbin/start-slave.sh spark://sparkmaster:7077
+
+7. Check the Spark master web user interface (UI) at http://sparkmaster:8080/.
+
+8. Check the Spark worker web UI at http://sparkslave:8081/.
+
+9. Run the built-in Pi Estimator example from the terminal of either node:
+
+Click here to view code image
+
+spark-submit --class org.apache.spark.examples.SparkPi \
+
+--master spark://sparkmaster:7077 \
+
+--driver-memory 512m \
+
+--executor-memory 512m \
+
+--executor-cores 1 \
+
+$SPARK_HOME/lib/spark-examples*.jar 10
+
+10. If the application completes successfully, you should see something like the following (omitting informational log messages). Note, this is an estimator program, so the actual result may vary:
+
+Pi is roughly 3.140576
+
+This is a simple example. If it was a production cluster, I would set up passwordless SSH to enable the start-all.sh and stop-all.sh shell scripts. I would also consider modifying additional configuration parameters for optimization.
+
+RDDs are distributed collections of immutable objects that can operated on in parallel and 
+be spread out across multiple nodes.
+
+Two operations can be performed on RDD's: transformations and actions
+
+Transformations create new RDD's from old ones which are subsequently destroyed unless you
+use the persist() action to save it on the system.
+
+Actions gather information from the RDD's and display what information they have to the
+client through the driver.
+
+Transformations are lazily executed - they are only evaluated when an is requested to return
+a result. 
+
+An RDD's lineage is tracked by Spark to ensure fault tolerance and the ability to recreate
+the information in case a node goes down or something fails.
+
+There are also multiple types of RDD's.
+
+The strucutre and implementation of RDD's are defined in Spark when it recieves the data to
+transfer into an RDD.
+
+Samples
+
+aRDD.sample(withReplacement, fraction, seed=None) 
+-takes a sample of the RDD
+#withReplacement - Boolean, elements can be sampled multiple times
+#fraction - double value from 0 to 1
+#seed - integer, seed for a random number generator that determines whether
+	#to include an element in the return RDD
+
+logs = sc.textFile('file///opt/spark/data/weblogs')
+logs.count()
+sampled_logs = logs.sample(False, .1, seed=None)
+sampled_logs.count()
+
+aRDD.takeSample(withReplacement, num, seed=None)
+-returns a random list of values from RDD being sampled
+
+Transformations
+.map(<function>, preservesPartitioning=False)
+#preservesPartitioning - a key value pair RDD is defined and grouped by a key hash
+			#or key range, partitions are kept intact 
+			#if preservesPartitioning=True
+
+.flatMap(<function>, preservesPartitioning)
+-removes level of nesting that occurs in generating the list of data
+ 
+.filter(<function>)
+#can also be used for short-circuiting (using Booleans for evaluation)
+ex.
+	aRDD.filter(lambda x, y: len(x) > 35 and len(y) < 50)
+
+.groupBy(<function>, numPartitions=None)
+-returns an RDD of items grouped by a specified function; can be a key or expression
+
+#numPartitions - used to create a specified number of partitinos created automatically
+#from the output of the grouping function
+
+.sortBy(<keyfunc>, ascending=True, numPartitions=None)
+-sorts an RDD by the function that nominates the key for a given dataset
+-sorts according to the sort order of the key object type such numerically
+ or lexicographically
+
+.distinct()
+-returns a new RDD containing distinct elements from the input RDD
+-removes all duplicates
+
+Set Operations
+
+.union(<otherRDD>)
+-performs a union of the two RDD's
+
+.intersection(<otherRDD>)
+-perfroms an intersection of the two RDD's
+
+.subtract(<otherRDD>, numPartitions=None)
+-returns all elements from the first RDD that are not part of the second
+
+Spark Actions
+.count()
+-returns the number of elements or records in the RDD
+
+.collect()
+-returns a list that contains all of the elements of the RDD to the driver
+
+.take()
+-returns the first n elements of an RDD
+
+.top()
+-returns the top n elements of an RDD, however, the elements are ordered beforehand and 
+ then returned in descending order as well
+
+.first()
+-returns n number of atomic elements not as a list unlike take
+
+reduce and fold 
+-emphasize commmutativity and associativity so it does not matter how the data is set up
+ across the distributed platform
+
+.reduce(<function>)
+-reduces the elements of the RDD using a specified commutative and associate operator
+-returns a value
+ex.
+	numbers = sc.parallelize([1,2,3,4,5,6,7,8,9])
+	numbers.reduce(lambda x,y: x+y)
+	#returns 45 - summation of all the numbers
+
+.fold(zeroValue, <function>)
+-aggregates the elements of each partition of the RDD and does an aggregate operation 
+ against the result for all using a given associate and commutative function a zeroValue
+ex.
+	numbers = sc.parallelize([1,2,3,4,5,6,7,8,9])
+	numbers.fold(0, lambda x,y: x+y)
+	#returns 45
+	#Note that fold and result are practically the same, however, the zeroValue is added
+	#to the beginning and the end of the commutative and associative function
+	#this allows you to operate on an empty RDD and not get an exception unlike if you
+	#used reduce()
+
+.foreach(<function>)
+-performs a function on each element in the RDD
+ex.
+	def printfunc(x): print(x)
+	
+	lorem = sc.textFile('file///opt/spark/data/lorme.txt')
+	words = lorem.flatMap(lambda x: x.split())
+	words.foreach(lambda x: printfunc(x))
+	#prints each word on a new line
+
+.keyBy(<function>)
+-creates tuples from the elements in the RDD by appplying a function
+ex.
+	locations = sc.parallelize([('Hayward', "USA', 1),
+					('Baumholder', "Germany", 2),
+					('Melbourne', "Australia", 3)])
+
+	bylocno = locations.byKey(lambda x: x[2])
+	bylocno.collect()
+	#gives you a list of tuples with tuples like (1, ('Hayward', "USA", 1), etc.
+
+.mapValues(<function>)
+-passes each value in the key value pair RDD through a function without changing the keys
+
+.flatMapValues(<function>)
+-passes each value ina key value pair RDD through a function without changing the keys and
+ produces a flattened list; works exactly like flatMap()
+
+.groupByKey(numPartitions=None, partitionFunc=<hash_function>)
+-groups the values for each key value pair RDD into a single sequence
+-consider using reduceByKey and groupByKey more often
+
+.reduceByKey(<function>, numPartitions=None, partitionFunc=<hash_function>)
+-merges the values for each key using an associative function
+
+.foldByKey(0, <function>,, numPartitions=None, partitionFunc=<hash_function>)
+-pratically the same as reduceByKey accept it can evaluate empty RDD's without throughing
+ an exception
+
+.sortByKey(ascending=True, numPartitions=None, keyfunc=<function>)
+-sorts a key value pair RDD by the predefined key
+
+.subtractByKey(<otherRDD>, numPartitions)
+-returns key value pair elements from the RDD with keys that were not present in the other
+ RDD
+
+Joins
+
+.join(<otherRDD>, numPartitions=None)
+-inner join, matches two key value pair RDDs by their respective keys and values that match
+-returns tuple of the key value items that matched and a list of rows that matched within a
+ larger list
+-gives repeat values for reciprocal matches
+
+.leftOuterJoin(<otherRDD>, numPartitions=None)
+-returns all elements or records from the first RDD referenced as either the key
+ with a tuple of the records that matched the record in the first RDD, or None with the list of
+ of the record in the first RDD as an RDD
+
+.rightOuterJoing(<otherRDD> numPartitions=None)
+-does the opposite of leftOuterJoin()
+
+.fullOuterJoin(<otherRDD>, numPartitions=None)
+-returns all elements from both RDDs whether there is a key match or not
+
+.cogroup(<otherRDD> numPartitions=None)
+-returns an iterable object that has tuples related to keys
+
+.cartesian (a cross join)
+- generates every possible combination of records from both RDDs (think the powerset without
+  the null set)
+
+Stats Operations
+.max()
+-maximum
+
+.min()
+-minimum
+
+.mean()
+-arithmetic mean
+
+.sum()
+-summation
+
+.stdev()
+-standard deviation
+
+.variance()
+-variance - how far spread out the numbers are
+
+.stats() 
+-gives you basic stats like max, min, standard deviation, mean, count
+
+#k-means clustering
+from numpy import array
+from math import sqrt
+
+from pyspark.mllib.clustering import KMeans, KMeansModel
+
+# Load and parse the data
+data = sc.textFile("data/mllib/kmeans_data.txt")
+parsedData = data.map(lambda line: array([float(x) for x in line.split(' ')]))
+
+# Build the model (cluster the data)
+clusters = KMeans.train(parsedData, 2, maxIterations=10, initializationMode="random")
+
+# Evaluate clustering by computing Within Set Sum of Squared Errors
+def error(point):
+    center = clusters.centers[clusters.predict(point)]
+    return sqrt(sum([x**2 for x in (point - center)]))
+
+WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
+print("Within Set Sum of Squared Error = " + str(WSSSE))
+
+# Save and load model
+clusters.save(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
+sameModel = KMeansModel.load(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
