@@ -1,0 +1,360 @@
+To clarify Stephan Rauch (for 18.04 only) - If using grub method to disable ipv6, the /etc/sysctl.conf configuration changes were not needed. I ended up leaving them in, (in case netplan is fixed in future) but all that is needed is the following:
+
+-------------------  Disable ipv6 on Ubuntu --------------------------------
+****MOST IMPORTANT****
+sudo vi /etc/default/grub
+Modify the GRUB_CMDLINEs to look like:
+
+GRUB_CMDLINE_LINUX_DEFAULT="ipv6.disable=1"
+GRUB_CMDLINE_LINUX="ipv6.disable=1"
+Then execute:
+sudo update-grub
+sudo reboot
+
+********END********
+Enjoy ipv4.
+
+https://askubuntu.com/questions/1046057/disabling-ipv6-in-ubuntu-server-18-04
+
+Disabling SELinux 
+https://www.configserverfirewall.com/ubuntu-linux/disable-selinux-ubuntu/
+
+--------------- Irrelevent ----------------
+Java-Names:
+java-1.11.0-openjdk-amd64
+java-11-openjdk-amd64
+default-java
+
+---------------------------------------------------
+****NOTE:
+Place exported environment variables in /etc/profile to keep them there permananently
+To have Hadoop and Spark run smoothly, the latest version java that they'll take is 8 and
+no greater; Hadoop will run on 11 but there will be constant warnings related to a security
+feature, with 8 there is no problem; remember to have JAVA_HOME = 8 and have the hadoop
+environment shell file have its JAVA_HOME path equal 8 as well.
+
+To have Spark have more overhead, insert this into yarn-site.xml:
+
+<property>
+	<name>yarn.nodemanager.vmem-pmem-ration</name>
+	<value>5</value>
+	<description> 
+	Ratio between virtual memory (since Hadoop is a virtual system)
+	to phsical memory.
+	</description>
+</property>
+
+---------------------------------------------------
+
+
+
+
+------------------------------------------START HERE FOR HADOOP-------------------------------------------------------------------------------------
+
+1
+In this exercise we will install a pseudo-distributed mode Hadoop cluster using the latest Hadoop release downloaded from hadoop.apache.org.
+
+As this is a test cluster the following specifications will be used in our example:
+
+image Red Hat Enterprise Linux 7.2 (The installation steps would be similar using other Linux distributions such as Ubuntu)
+
+image 2 CPU cores
+
+image 8GB RAM
+
+image 30GB HDD
+
+image hostname: hadoopnode0
+
+1. Disable SELinux (this is known to cause issues with Hadoop):
+
+$ sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' \
+
+/etc/selinux/config
+
+2. Disable IPv6 (this is also known to cause issues with Hadoop):
+
+$ sudo sed -i "\$anet.ipv6.conf.all.disable_ipv6 = 1" \
+
+/etc/sysctl.conf
+
+$ sudo sed -i "\$anet.ipv6.conf.default.disable_ipv6 = 1" \
+
+/etc/sysctl.conf
+
+$ sudo sysctl -p
+
+3. Reboot
+
+4. Run the sestatus command to ensure SELinux is not enabled:
+
+$ sestatus
+
+5. Install Java. We will install the OpenJDK, which will install both a JDK and JRE:
+
+$ sudo yum install java-1.7.0-openjdk-devel
+
+a. Test that Java has been successfully installed by running the following command:
+
+$ java -version
+
+If Java has been installed correctly you should see output similar to the following:
+
+java version "1.7.0_101"
+
+OpenJDK Runtime Environment (rhel-2.6.6.1.el7_2-x86_64..)
+
+OpenJDK 64-Bit Server VM (build 24.95-b01, mixed mode)
+
+Note that depending upon which operating system you are deploying on, you may have a version of Java and a JDK installed already. In these cases it may not be necessary to install the JDK, or you may need to set up alternatives so you do not have conflicting Java versions.
+
+6. Locate the installation path for Java, and set the JAVA_HOME environment variable:
+
+$ export JAVA_HOME=/usr/lib/jvm/REPLACE_WITH_YOUR_PATH/
+
+7. Download Hadoop from your nearest Apache download mirror. You can obtain the link by selecting the binary option for the version of your choice at http://hadoop.apache.org/releases.html. We will use Hadoop version 2.7.2 for our example.
+
+$ wget http://REPLACE_WITH_YOUR_MIRROR/hadoop-2.7.2.tar.gz
+
+8. Unpack the Hadoop release, move it into a system directory, and set an environment variable from the Hadoop home directory:
+
+$ tar -xvf hadoop-2.7.2.tar.gz
+
+$ mv hadoop-2.7.2 hadoop
+
+$ sudo mv hadoop/ /usr/share/
+
+$ export HADOOP_HOME=/usr/share/hadoop
+
+9. Create a directory which we will use as an alternative to the Hadoop configuration directory:
+
+$ sudo mkdir -p /etc/hadoop/conf
+
+10. Create a mapred-site.xml file (I will discuss this later) in the Hadoop configuration directory:
+
+$ sudo cp $HADOOP_HOME/etc/hadoop/mapred-site.xml.template \
+
+$HADOOP_HOME/etc/hadoop/mapred-site.xml
+
+11. Add JAVA_HOME environment variable to hadoop-env.sh (file used to source environment variables for Hadoop processes):
+
+$ sed -i "\$aexport JAVA_HOME=/REPLACE_WITH_YOUR_JDK_PATH/" \
+
+$HADOOP_HOME/etc/hadoop/hadoop-env.sh
+
+Substitute the correct path to your Java home directory as defined in Step 6.
+
+12. Create a symbolic link between the Hadoop configuration directory and the /etc/hadoop /conf directory created in Step 10:
+
+$ sudo ln -s $HADOOP_HOME/etc/hadoop/* \
+
+/etc/hadoop/conf/
+
+13. Create a logs directory for Hadoop:
+
+$ mkdir $HADOOP_HOME/logs
+
+14. Create users and groups for HDFS and YARN:
+
+$ sudo groupadd hadoop
+
+$ sudo useradd -g hadoop hdfs
+
+$ sudo useradd -g hadoop yarn
+
+15. Change the group and permissions for the Hadoop release files:
+
+$ sudo chgrp -R hadoop /usr/share/hadoop
+
+$ sudo chmod -R 777 /usr/share/hadoop
+
+16. Run the built in Pi Estimator example included with the Hadoop release.
+
+$ cd $HADOOP_HOME
+
+$ sudo -u hdfs bin/hadoop jar \
+
+share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar \
+
+pi 16 1000
+
+As we have not started any daemons or initialized HDFS, this program runs in LocalJobRunner mode (recall that I discussed this in Hour 2, “Understanding the Hadoop Cluster Architecture”). If this runs correctly you should see output similar to the following:
+
+...
+
+Job Finished in 2.571 seconds
+
+Estimated value of Pi is 3.14250000000000000000
+
+Now let’s configure a pseudo-distributed mode Hadoop cluster from your installation.
+
+17. Use the vi editor to update the core-site.xml file, which contains important information about the cluster, specifically the location of the namenode:
+
+$ sudo vi /etc/hadoop/conf/core-site.xml
+
+# add the following config between the <configuration>
+
+# and </configuration> tags:
+
+<property>
+
+<name>fs.defaultFS</name>
+
+<value>hdfs://hadoopnode0:8020</value>
+
+</property>
+
+Note that the value for the fs.defaultFS configuration parameter needs to be set to hdfs://HOSTNAME:8020, where the HOSTNAME is the name of the NameNode host, which happens to be the localhost in this case.
+
+18. Adapt the instructions in Step 17 to similarly update the hdfs-site.xml file, which contains information specific to HDFS, including the replication factor, which is set to 1 in this case as it is a pseudo-distributed mode cluster:
+
+sudo vi /etc/hadoop/conf/hdfs-site.xml
+
+# add the following config between the <configuration>
+
+# and </configuration> tags:
+
+<property>
+
+<name>dfs.replication</name>
+
+<value>1</value>
+
+</property>
+
+19. Adapt the instructions in Step 17 to similarly update the yarn-site.xml file, which contains information specific to YARN. Importantly, this configuration file contains the address of the resourcemanager for the cluster—in this case it happens to be the localhost, as we are using pseudo-distributed mode:
+
+$ sudo vi /etc/hadoop/conf/yarn-site.xml
+
+# add the following config between the <configuration>
+
+# and </configuration> tags:
+
+<property>
+
+<name>yarn.resourcemanager.hostname</name>
+
+<value>hadoopnode0</value>
+
+</property>
+
+<property>
+
+<name>yarn.nodemanager.aux-services</name>
+
+<value>mapreduce_shuffle</value>
+
+</property>
+
+20. Adapt the instructions in Step 17 to similarly update the mapred-site.xml file, which contains information specific to running MapReduce applications using YARN:
+
+$ sudo vi /etc/hadoop/conf/mapred-site.xml
+
+# add the following config between the <configuration>
+
+# and </configuration> tags:
+
+<property>
+
+<name>mapreduce.framework.name</name>
+
+<value>yarn</value>
+
+</property>
+
+21. Format HDFS on the NameNode:
+
+$ sudo -u hdfs bin/hdfs namenode -format
+
+Enter [Y] to re-format if prompted.
+
+22. Start the NameNode and DataNode (HDFS) daemons:
+
+$ sudo -u hdfs sbin/hadoop-daemon.sh start namenode
+
+$ sudo -u hdfs sbin/hadoop-daemon.sh start datanode
+
+23. Start the ResourceManager and NodeManager (YARN) daemons:
+
+$ sudo -u yarn sbin/yarn-daemon.sh start resourcemanager
+
+$ sudo -u yarn sbin/yarn-daemon.sh start nodemanager
+
+24. Use the jps command included with the Java JDK to see the Java processes that are running:
+
+$ sudo jps
+
+You should see output similar to the following:
+
+2374 DataNode
+
+2835 Jps
+
+2280 NameNode
+
+2485 ResourceManager
+
+2737 NodeManager
+
+25. Create user directories and a tmp directory in HDFS and set the appropriate permissions and ownership:
+
+$ sudo -u hdfs bin/hadoop fs -mkdir -p /user/<your_user>
+
+$ sudo -u hdfs bin/hadoop fs -chown <your_user>:<your_user> /user/<your_user>
+
+$ sudo -u hdfs bin/hadoop fs -mkdir /tmp
+
+$ sudo -u hdfs bin/hadoop fs -chmod 777 /tmp
+
+26. Now run the same Pi Estimator example you ran in Step 16. This will now run in pseudo-distributed mode:
+
+$ bin/hadoop jar \
+
+share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar \
+
+pi 16 1000
+
+The output you will see in the console will be similar to that in Step 16. Open a browser and go to localhost:8088. You will see the YARN ResourceManager Web UI 
+
+
+
+----------------------------------------------------------------------------------  START HERE FOR SPARK ------------------------------------------------------------
+
+$ wget http://<downloadhost>/spark-2.0.0-bin-hadoop2.7.tgz2. 
+
+Unpack the release and move the contents into a new Spark home directory (/opt/spark):
+
+$ tar -xzf spark-2.0.0-bin-hadoop2.7.tgz
+$ sudo mv spark-2.0.0-bin-hadoop2.7 /opt/spark
+
+3. Create environment variables required for Spark:
+
+$ export SPARK_HOME=/opt/spark
+$ export PATH=$SPARK_HOME/bin:$PATH
+$ export HADOOP_CONF_DIR=/etc/hadoop/conf
+
+These environment variable could also be set using the .bashrc file 
+or similar user or system profile scripts. You need to do this if you wish to persist 
+these variables beyond the current session.
+4. Open the PySpark shell by running the pyspark command from any directory, as you’ve 
+added the Spark bin directory to the PATH.
+
+$ pyspark
+
+If Spark has been successfully installed, you should see the following output (with 
+informational logging messages omitted for brevity):
+Welcome to       
+____              __      / __/__  ___ _____/ /__     _\ \/ _ \/ _  / __/  
+'_/    /__ / .__/\_,_/_/ /_/\_\    
+version 2.0.0       
+/_/Using Python version 2.7.5 (default, Oct 11 2015 17:47:16)
+SparkSession available as 'spark'.
+>>>
+
+5. Keeping the pyspark shell open, in a browser (on the same machine or another machine with
+access to your machine) navigate to 
+
+http://<your_server>:4040.
+
+You should see the Spark Application Web UI connected to your pyspark session, 
+similar to the UI shown in Figure 13.7.
