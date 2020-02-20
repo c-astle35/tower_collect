@@ -1,0 +1,32 @@
+Apache Spark Learning Path:
+
+Overview of What Apache Spark and Hadoop Are:
+-schematics of both
+-explain to Dr. Nuygen why he probably won't need Hadoop unless
+ he's going to have huge files that he wants to store or is interested in
+ working with HDFS
+-additional information will be spent on Apache Spark architecture
+
+What an Resilient Distributed Dataset Is and How It is Handled in the
+Architectural Framework:
+
+-read in various file types and parallelize lists
+
+Give an Overview of Lambda Functions in Python and How to Work RDD's with
+Them:
+
+-work with the RDD's that have been created
+
+Introduce Apache Spark's Capabilities
+Give a Very Specific Overview of MlLib with Documentation
+
+-Provide Book:
+ Sams Teach Yourself Apache Spark in 24 Hours through O'Reilly
+
+
+Lambda functions in Python:
+https://www.guru99.com/python-lambda-function.html - most helpful
+https://docs.python.org/2/howto/functional.html#built-in-functions - least helpful
+
+
+
