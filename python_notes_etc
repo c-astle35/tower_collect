@@ -1,0 +1,391 @@
+import json
+
+from pprint import pprint
+
+
+
+json_str = '''{
+
+  "people" : [
+
+    {"fname": "Jeff",
+
+     "lname": "Aven",
+
+     "tags": ["big data","hadoop"]},
+
+    {"fname": "Doug",
+
+     "lname": "Cutting",
+
+     "tags": ["hadoop","avro","apache","java"]},
+
+    {"fname": "Martin",
+
+     "lname": "Odersky",
+
+     "tags": ["scala","typesafe","java"]},
+
+    {"fname": "John",
+
+     "lname": "Doe",
+
+     "tags": []}
+
+    ]}'''
+
+
+
+people = json.loads(json_str)
+
+len(people["people"])
+
+4
+
+
+
+people["people"][0]["fname"]
+
+u'Jeff'
+
+
+
+# add tag item to the first person
+
+people["people"][0]["tags"].append(u'spark')
+
+
+
+# delete the fourth person
+
+del people["people"][3]
+
+
+
+# pretty print json object
+
+pprint(people)
+
+
+#with pyspark
+
+import json
+
+json_str = json_str from listing 9.10
+
+people_obj = json.loads(json_str)
+
+people = sc.parallelize(people_obj["people"])
+
+ParallelCollectionRDD[0] at parallelize at PythonRDD.scala:423
+
+hadoop_tags = people.filter(lambda x: "hadoop" in x['tags']) \
+
+               .map(lambda x: x['fname'] + " " + x['lname'])
+
+hadoop_tags.take(2)
+
+Pickle
+-faster than JSON
+-lacks portability of JSON
+-cpickle - implemented in C and is much faster, subclassing not supported
+
+try:
+
+    import cPickle as pickle
+
+except:
+
+    import pickle
+
+
+
+obj = { "fname": "Jeff", \
+
+        "lname": "Aven", \
+
+        "tags": ["big data","hadoop"]}
+
+str_obj = pickle.dumps(obj)
+
+pickled_obj = pickle.loads(str_obj)
+
+pickled_obj["fname"]
+
+'Jeff'
+
+pickled_obj["tags"].append('spark')
+
+str(pickled_obj["tags"])
+
+"['big data', 'hadoop', 'spark']"
+
+pickled_obj_str = pickle.dumps(pickled_obj)
+
+"(dp1\nS'lname'\np2\nS'Aven'\np3\nsS'fname'\np4\nS'Jeff'
+
+\np5\nsS'tags'\np6\n(lp7\nS'big data'\np8\naS'hadoop'\np
+
+9\naS'spark'\np10\nas."
+
+pickle.dump(pickled_obj, open('object.pkl', 'wb'))
+
+pickleFile() - input
+aRDD.saveAsPickleFile(path)
+
+Other functional programming languages:
+Lisp, Scala, JavaScript, Erlang, Clojure, Go, etc.
+
+Functional Programming in Python:
+-uses lambda
+-takes any number of input arguments but only returns one value
+
+Higher-order Functions:
+-accept functions as arguments and are able to return a function as a result
+ex.
+	map(), reduce(), filter()
+
+lines = sc.textFile("file///opt/spark/data/shakespeare.txt")
+counts = lines.flatMap(lambda x: x.split(' '))
+		.filter(lambda x: len(x) >0)
+		.map(lambda x: (x, 1))
+		.reduceByKey(lambda x, y: x+y)
+		.collect()
+for (word, count) in counts:
+	print("%s: %i % (word, count))
+
+Callback functions have tail calls.
+Tail calls - functions that call themselves.
+Tail call recursion - function recursively callint itself under certain 
+		      conditions
+def gcd(x, y):
+
+    if x < y: return gcd(y, x)
+
+    r = x%y
+
+    if r == 0: return y
+
+    else: return gcd(y, r)
+
+
+
+import random
+
+low = 1
+
+high = 100
+
+numpairs = sc.parallelize([(random.randint(low, high), \
+
+    random.randint(low, high)) for k in range(10)])
+
+numpairs_gcd = numpairs.map(lambda x: (x[0], x[1], gcd(x[0], x[1])))
+
+numpairs_gcd.take(5)
+
+
+Short-circuiting:
+.filter(lambda x: (len(x) > 0) and (len(x) < 3))
+
+parallelization - discourages and/or disallows functions with side effects 
+		  like referring to any action outside the functions scope
+		  like printing, writing to an external file, or maintaining
+		  state
+
+		-since the functions are independent of each other, the 
+		 functions themselves can then be run parallel with each
+		 other at the same time
+		
+		-this then makes it well-suited for distributed platforms
+		 like Spark and Hadoop
+
+closures - function objects that enclose the scope at the time they of
+	   instantiation
+	 - remember the values by enclosing the scope
+
+def generate_message(concept):
+
+    def ret_message():
+
+               return 'This is an example of ' + concept
+
+        return ret_message
+
+
+
+# create closure
+
+call_func = generate_message('closures in Python')
+
+
+
+call_func
+
+<function ret_message at 0x7f2a52b72d70>
+
+call_func()
+
+'This is an example of closures in Python'
+
+# inspect closure
+
+call_func.__closure__
+
+(<cell at 0x7f2a557dbde0: str object at 0x7f2a557dbea0>,)
+
+type(call_func.__closure__[0])
+
+<type 'cell'>
+
+call_func.__closure__[0].cell_contents
+
+'closures in Python'
+
+# delete function
+
+del generate_message
+
+call_func()
+
+'This is an example of closures in Python'
+
+# the closure still works!
+
+
+
+1. Install ipython
+
+pip install ipython
+
+
+2. Create ipython profile
+
+ipython profile create pyspark
+
+3. Set Environment Variables
+
+export SPARK_HOME=/opt/spark
+
+export PYSPARK_SUBMIT_ARGS="--master local pyspark-shell"
+
+4. Create Configuration File
+
+vi ~/.ipython/profile_pyspark/startup/00-pyspark-setup.py
+
+5. Edit Configuration File
+
+configure ipython with pyspark:
+
+import os, sys, glob
+
+
+
+print 'configuring IPython PySpark environment..'
+
+
+
+# get environment vars and update path
+
+SPARK_HOME = os.environ.get('SPARK_HOME', None)
+
+sys.path.insert(0, SPARK_HOME + "/python")
+
+
+
+# Get Py4J version and add to the system path
+
+libpath = os.path.join(SPARK_HOME,'python/lib/py4j*src.zip')
+
+py4js = glob.glob(libpath)
+
+if len(py4js) > 0:
+
+    py4j = py4js[0]
+
+    sys.path.insert(0, py4j)
+
+
+
+# Initialize PySpark
+
+execfile(os.path.join(SPARK_HOME,'python/pyspark/shell.py'))
+
+
+https://docs.python.org/2/howto/functional.html
+-Python Functional Programming
+https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf
+-Resilient Distributed Datasets
+https://spark.apache.org/research.html
+-Apache Spark Research papers
+https://databricks.com/resources/type/research-papers
+-Databricks Research papers
+https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf
+-Google File System
+
+
+https://marcobonzanini.com/2015/06/08/functional-programming-in-python/
+https://python-history.blogspot.com/2009/04/origins-of-pythons-functional-features.html
+
+
+kernels - processes that run intereactive code in a particular programming
+	  language and return output to the user
+kernels communicate with notebooks using the Interactive Computing Protocol,
+which is an open network protocol based on JSON data over ZMQ and WebSockets
+
+Kernel Zero - the IPython kernel
+
+note: 'localhost' was originally set to c.NotebookApp.ip with # in front
+
+import re
+
+doc = sc.textFile("file:///opt/spark/data/shakespeare.txt")
+
+flattened = doc.filter(lambda line: len(line) > 0) \
+
+  .flatMap(lambda line: re.split('\W+', line))
+
+kvpairs = flattened.filter(lambda word: len(word) > 0) \
+
+  .map(lambda word:(word.lower(),1))
+
+countsbyword = kvpairs.reduceByKey(lambda v1, v2: v1 + v2)
+
+topwords = countsbyword.map(lambda (w, c): (c, w)) \
+
+  .sortByKey(ascending=False)
+
+top5words = topwords.take(5)
+
+import matplotlib.pyplot as plt
+
+%matplotlib inline
+
+xValue = []
+
+yValue = []
+
+for tup in top5words:
+
+   xValue.append(tup[1])
+
+   yValue.append(int(tup[0]))
+
+# Plot the data
+
+topN = list(range(1,6))
+
+plt.xlabel('Word')
+
+plt.ylabel('Count')
+
+plt.title('Top 5 Used Words')
+
+plt.bar(topN,yValue)
+
+plt.xticks()
+
+plt.xticks(topN, xValue)
+
+plt.show()
+
