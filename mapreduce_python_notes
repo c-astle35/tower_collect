@@ -1,0 +1,118 @@
+Different Implementations of Python
+
+CPython - comes with standard Python; Python Virtual Machine is buillt with
+	  C; executes Python bytecode
+
+Jython - compiles Python code as Java bytecode to run a JVM
+
+Python.NET and IronPython - intended for .NET developers; written entirely
+			    in C#; run in Microsoft's Common Language Runtime
+
+Psyco and PyPy - based on Just-In-Time (JIT) compiler; converts some if not
+		 all Python code to machine code directly instead of bytecode;
+		 the intention is to make it quicker
+
+PySpark - uses standard CPython implementation and Py4J which allows Python
+	  programs to interact with Java objects and Java applications to
+	  call back Python objects
+RDD's
+
+Resillent
+Distributed
+Dataset
+
+sc.textFile(path)
+sc.wholeTextFiles(path)
+sc.parallelize(c) - create your RDD's from own lists
+sc.range() #0, 1000, 1, 2; start, stop, increment, numPartitions
+
+Actions:
+.getNumPartitions()
+.count()
+.collect()
+.values()
+.keys()
+.take()
+.min()
+.max()
+.saveAsTextFile()
+.persist()
+
+Transformations:
+aRDD.filter(lambda x: x%2)
+aList = [0,1,2,3,4,5,6]
+aRDD.map(lambda x,y: x+y, aList)
+presidents = people.filter(lambda x: x['pos'] == 'president').map(lambda x: 
+				x['fname'] + " " + x['lname'])
+
+.map()
+.filter()
+.reduce()
+.flatmap()
+.reduceByKey()
+.sortByKey()
+
+#load JSON file into spark
+
+sc = spark.sparkContext
+path = "examples/src/main/resources/people.json"
+peopleDF = spark.read.json(path)
+
+peopleDF.printSchema()
+
+people.createOrReplaceTempView("people")
+
+teenagerNamesDF = spark.sql("SELECT name FROM people WHERE age BETWEEN 13 1ND 19")
+teenagerNamesDF.show()
+
+Go to DAG visualziation to view number steps taken to complete a process
+
+MapReduce:
+
+Map
+Pollers sort through ballots for ones that are incomplete at each station
+
+Shuffle
+The ballots from each station are organized according to candidate
+
+Reduce
+The respective ballots for each candidate are sent to their respective 
+locations at another location where they are tallied separately
+
+MapReduce WordCount Exercise:
+
+import re
+
+
+
+doc = sc.textFile("file:///opt/spark/data/shakespeare.txt")
+
+
+
+flattened = doc.filter(lambda line: len(line) > 0) \
+
+.flatMap(lambda line: re.split('\W+', line))
+
+
+
+kvpairs = flattened.filter(lambda word: len(word) > 0) \
+
+ .map(lambda word:(word.lower(),1))
+
+
+
+# repartition into 5 partitions
+
+countsbyword = kvpairs.reduceByKey(lambda v1, v2: v1 + v2, \
+
+numPartitions=5)
+
+
+
+topwords = countsbyword.map(lambda (w, c): (c, w)) \
+
+.sortByKey(ascending=False)
+
+
+
+topwords.saveAsTextFile("file:///opt/spark/data/wordcounts")
