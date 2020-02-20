@@ -1,0 +1,63 @@
+Medical Imaging Datasets:
+https://brainweb.bic.mni.mcgill.ca/brainweb/
+https://www.nitrc.org/projects/multimodal/
+https://brain-development.org/ixi-dataset/
+http://headctstudy.qure.ai/dataset
+http://braintumorsegmentation.org/
+https://smart-stats-tools.org/lesion-challenge
+https://www.oasis-brains.org/#dictionary
+https://www.aapm.org/GrandChallenge/LowDoseCT/
+https://fastmri.med.nyu.edu/
+http://adni.loni.usc.edu/data-samples/access-data/
+https://openneuro.org/
+https://archive.ics.uci.edu/ml/datasets/SPECT+Heart
+https://archive.ics.uci.edu/ml/index.php
+
+PySpark & Related Papers on Distributed Computing:
+https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf
+-resilient distributed datasets
+https://pdos.csail.mit.edu/6.824/papers/gfs.pdf
+-the Google File System
+https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf
+-Google's Bigtable
+https://spark.apache.org/research.html
+-Apache Spark Research
+https://databricks.com/resources/type/research-papers
+-Databricks Research
+https://web.eecs.umich.edu/~mosharaf/Readings/YARN.pdf
+-YARN paper
+https://storageconference.us/2010/Papers/MSST/Shvachko.pdf
+-HDFS Paper
+https://hadoop.apache.org/docs/r1.2.1/hdfs_design.html
+-HDFS Architecture Guide
+https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html
+-Apache Hadoop YARN
+
+
+
+https://spark.apache.org/docs/latest/rdd-programming-guide.html - RDD Programming Guide
+https://spark.apache.org/docs/latest/ml-guide.html - Spark Machine Learning Guide
+https://spark.apache.org/docs/latest/sql-programming-guide.html - SQL, DataFrames, and DataSets Guide
+https://spark.apache.org/docs/latest/api/python/index.html - PySpark Documentation
+https://spark.apache.org/docs/latest/index.html - Spark Overview
+
+Python:
+NiBabel - neuro-imaging library for Python
+https://nipy.org/nibabel/
+https://nipy.org/nibabel/dicom/dcm2nii_algorithms.html - apparently useful algorithm?
+https://docs.scipy.org/doc/numpy/reference/routines.linalg.html -linear algebra numpy
+
+Academic Papers
+https://www.ncbi.nlm.nih.gov/pubmed/10571928 - standardizing MR image intensity scale
+https://intensity-normalization.readthedocs.io/en/latest/algorithm.html#z-score - related algorithms
+
+Robust Brain Extraction to Remove the Brain from the Skull in the Image:
+https://www.nitrc.org/projects/robex
+
+Visualization:
+https://mipav.cit.nih.gov/
+https://horosproject.org/
+
+R
+https://neuroconductor.org/
+
